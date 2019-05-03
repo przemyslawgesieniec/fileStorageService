@@ -1,5 +1,6 @@
 package pl.gesieniec.mpw_server.controller;
 
+import pl.gesieniec.mpw_server.model.QueuedUser;
 import pl.gesieniec.mpw_server.service.StoreService;
 
 import java.io.IOException;
@@ -22,8 +23,9 @@ public class FileUpploadController {
             throws InterruptedException, IOException {
 
         System.out.println("przyszło");
-        storeService.storeFile(file, user);
-        System.out.println("zapisalo" + file.getOriginalFilename());
+        QueuedUser queuedUser = new QueuedUser(file,user);
+        storeService.storeFile(queuedUser);
+        System.out.println("zapisano " + file.getOriginalFilename());
         return ResponseEntity.ok().body(file.getName());
     }
 
