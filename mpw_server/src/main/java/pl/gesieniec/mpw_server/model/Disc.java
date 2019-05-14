@@ -5,31 +5,40 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
 public class Disc {
 
     private String path;
     private int discNumber;
+    private BlockingQueue<QueuedUserRequest> userTasks = new LinkedBlockingQueue<>();
 
     public Disc(int discNumber) {
         this.discNumber = discNumber;
         path = "src/main/resources/storage/disc" + discNumber;
     }
 
-    public void save(QueuedUser queuedUser) {
+    public void save(final int savingTime) {
         try {
-            int savingTime = 5000;
-            Thread.sleep(savingTime);
-            queuedUser.setExecutionTimeLeft(queuedUser.getExecutionTimeLeft()-savingTime);
-            queuedUser.getFile().transferTo(Paths.get(path, queuedUser.getFile().getOriginalFilename()));
-            updateCsvFile(queuedUser.getFile().getOriginalFilename(), queuedUser.getUser());
-        } catch (IOException e) {
+            final QueuedUserRequest queuedUserRequest = userTasks.take();
+            final boolean isFullyProcessed = performSaveForAllowedTime(queuedUserRequest, savingTime);
+
+            if (isFullyProcessed) {
+                queuedUserRequest.getFile().transferTo(Paths.get(path, queuedUserRequest.getFile().getOriginalFilename()));
+                updateCsvFile(queuedUserRequest.getFile().getOriginalFilename(), queuedUserRequest.getUser());
+            } else {
+                queuedUserRequest.setBoundToDisc(true);
+                userTasks.add(queuedUserRequest);
+            }
+
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private void updateCsvFile(String fileName, String username) {
+    private void updateCsvFile(final String fileName, final String username) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(path + "/d.csv", true));
             writer.append(fileName + "," + username);
@@ -38,5 +47,17 @@ public class Disc {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean performSaveForAllowedTime(QueuedUserRequest queuedUserRequest, final int savingTime) throws InterruptedException {
+
+        final int executionTimeLeft = queuedUserRequest.getExecutionTimeLeft();
+        if (executionTimeLeft < savingTime) {
+            Thread.sleep(executionTimeLeft);
+            return true;
+        }
+        queuedUserRequest.setExecutionTimeLeft(executionTimeLeft - savingTime);
+        Thread.sleep(savingTime);
+        return false;
     }
 }
