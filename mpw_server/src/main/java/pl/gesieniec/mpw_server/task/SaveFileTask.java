@@ -1,47 +1,47 @@
 package pl.gesieniec.mpw_server.task;
 
-import lombok.Getter;
-import org.apache.logging.log4j.util.PropertySource;
-import pl.gesieniec.mpw_server.model.Disc;
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
-import pl.gesieniec.mpw_server.service.TaskDispatcherService;
-
-import java.time.Instant;
-import java.util.Comparator;
+import pl.gesieniec.mpw_server.service.StoreService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Getter
-public class SaveFileTask implements Task  {
+
+public class SaveFileTask implements Task {
 
     @Autowired
-    TaskDispatcherService taskDispatcherService;
+    StoreService storeService;
 
     private QueuedUserRequest queuedUserRequest;
-    private Disc disc;
+    private int allowedExecutionTime;
+    private Long requestPriority;
 
-    public SaveFileTask(QueuedUserRequest queuedUserRequest) {
+    public SaveFileTask(QueuedUserRequest queuedUserRequest, int allowedExecutionTime, Long requestPriority) {
         this.queuedUserRequest = queuedUserRequest;
+        this.allowedExecutionTime = allowedExecutionTime;
+        this.requestPriority = requestPriority;
     }
-
-
 
     @Override
     public void run() {
 
-        try {
-            final Disc disc = taskDispatcherService.dispatchDiscForTask();
-            discs.add(disc);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        storeService.storeFile(queuedUserRequest);
     }
 
     @Override
-    public Long getRequestPriority(){
+    public Long getRequestPriority() {
 
-        final long requestInQueueTime = Instant.now().toEpochMilli() - queuedUserRequest.getRequestTimestamp();
-        return requestInQueueTime/queuedUserRequest.getExecutionTimeLeft();
+        return requestPriority;
     }
+
+    @Override
+    public QueuedUserRequest getUserRequestDetails() {
+        return queuedUserRequest;
+    }
+
+    @Override
+    public int getAllowedExecutionTime() {
+        return allowedExecutionTime;
+    }
+
 
 }

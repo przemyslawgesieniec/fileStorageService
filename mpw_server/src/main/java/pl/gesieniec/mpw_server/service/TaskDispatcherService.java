@@ -17,10 +17,10 @@ import org.springframework.stereotype.Service;
 public class TaskDispatcherService {
 
     private final static int NUMBER_OF_DISCS = 5;
+    private static final int EXECUTION_OVER = 0;
 
-    private BlockingQueue<Task> tasks;
-    //    private Map<String, Integer> activeUsers = new ConcurrentHashMap<>();
-    private BlockingQueue<Disc> discs = new LinkedBlockingQueue<>(5);
+    private BlockingQueue<Task> taskQueue;
+    private final BlockingQueue<Disc> discs = new LinkedBlockingQueue<>(5);
     private ExecutorService pool;
 
 
@@ -31,16 +31,62 @@ public class TaskDispatcherService {
         }
 
         final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority).reversed();
-        tasks = new PriorityBlockingQueue<>(30, taskPriority);
+        taskQueue = new PriorityBlockingQueue<>(30, taskPriority);
+
+        executeTasks();
 
     }
 
     public void submitNewTaskRequest(QueuedUserRequest queuedUserRequest) {
 
-        tasks.add(new SaveFileTask(queuedUserRequest));
+        final int resourceAllocationTime = calculateTaskResourceAllocationTime();
+        final Long requestPriority = calculateTaskPriority();
+
+        final SaveFileTask saveFileTask = new SaveFileTask(queuedUserRequest, resourceAllocationTime, requestPriority);
+
+        taskQueue.add(saveFileTask);
     }
 
-    public Disc dispatchDiscForTask() {
+    private void executeTasks() {
 
+        while (true) {
+            if (!taskQueue.isEmpty()) {
+                final Task polledTask = taskQueue.poll();
+                final int remainingExecutionTime = calculateRemainingExecutionTime(polledTask);
+                polledTask.getUserRequestDetails().setExecutionTimeLeft(remainingExecutionTime);
+                pool.submit(polledTask);
+
+                if (remainingExecutionTime > 0) {
+                    taskQueue.add(polledTask);
+                }
+            }
+        }
     }
+
+
+    private int calculateTaskResourceAllocationTime() {
+
+        //TODO algorithm
+        return 10;
+    }
+
+    private Long calculateTaskPriority() {
+
+        //TODO algorithm
+        return 1L;
+    }
+
+    private int calculateRemainingExecutionTime(Task task) {
+
+        final int taskExecutionTimeLeft = task.getUserRequestDetails().getExecutionTimeLeft();
+        final int allowedExecutionTime = task.getAllowedExecutionTime();
+        final int remainingTime = taskExecutionTimeLeft - allowedExecutionTime;
+        return remainingTime > 0 ? remainingTime : EXECUTION_OVER;
+    }
+
+//np> prioryted wyzszy im nizsza jego wartosc. biore timestampa w longu.
+// im mniejszy plik to dziele tę wartość na 2,3,4,5 itp. Im wiecej
+
+
+
 }
