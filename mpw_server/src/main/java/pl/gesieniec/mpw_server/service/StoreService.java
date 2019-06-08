@@ -2,7 +2,6 @@ package pl.gesieniec.mpw_server.service;
 
 import pl.gesieniec.mpw_server.model.Disc;
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
-import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -16,29 +15,19 @@ public class StoreService {
 
     public StoreService() {
 
+        for (int i = 0; i < 5; i++) {
+            discs.add(new Disc(i + 1));
+        }
     }
 
-    public void storeFile(QueuedUserRequest queuedUserRequest){
+    public void storeFile(QueuedUserRequest queuedUserRequest) {
 
+        System.out.println("Store Service: available discs: " + discs.size());
+        final Disc polledDisc = discs.poll();
+        System.out.println("Store Service: polled disc:" + polledDisc.getDiscNumber());
+
+        polledDisc.save(queuedUserRequest);
+        discs.add(polledDisc);
     }
-
-
-//    public Disc storeFile(QueuedUserRequest queuedUserRequest) throws IOException, InterruptedException {
-//
-//        //kolejka ze wszyrtkim taskami
-//        // lista active users
-//
-//        taskDispatcherService.submitNewTaskRequest(queuedUserRequest);
-//
-////        SaveFileTask saveFileTask = new SaveFileTask(discs, queuedUserRequest);
-////        pool.submit(new SaveFileTask()).cancel()
-//
-////        queuedUserRequest.getFile().transferTo(Paths.get("src/main/resources/storage/disc1", queuedUserRequest.getFile().getOriginalFilename()));
-////        updateCsvFile(queuedUserRequest.getFile().getOriginalFilename(), queuedUserRequest.getUser(), 1);
-//
-//        return null;
-//    }
-
-
 
 }

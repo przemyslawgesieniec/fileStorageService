@@ -6,31 +6,28 @@ import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
 
-import org.springframework.web.multipart.MultipartFile;
-
 @Getter
 public class QueuedUserRequest {
 
-    private MultipartFile file;
     private String user;
     private Long requestTimestamp;
     private UUID requestID;
+    private UserFileData userFileData;
 
     @Setter
-    private int executionTimeLeft;
+    private int fileSavingTime;
 
     @Setter
     private boolean isBoundToDisc;
 
 
-    public QueuedUserRequest(MultipartFile file, String user) {
+    public QueuedUserRequest(String user, UserFileData userFileData) {
+
         this.requestID = UUID.randomUUID();
-        this.file = file;
         this.user = user;
         this.requestTimestamp = Instant.now().toEpochMilli();
-        this.executionTimeLeft = (new Random().nextInt(9) + 30) * 1000; //9s - 30s
+        this.fileSavingTime = (new Random().nextInt(9) + 20) * 1000; //9s - 30s
         this.isBoundToDisc = false;
+        this.userFileData = userFileData;
     }
-
-
 }

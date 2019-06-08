@@ -1,6 +1,5 @@
 package pl.gesieniec.mpw_server.service;
 
-import pl.gesieniec.mpw_server.model.Disc;
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
@@ -8,9 +7,9 @@ import java.util.Comparator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,19 +19,17 @@ public class TaskDispatcherService {
     private static final int EXECUTION_OVER = 0;
 
     private BlockingQueue<Task> taskQueue;
-    private final BlockingQueue<Disc> discs = new LinkedBlockingQueue<>(5);
     private ExecutorService pool;
+
+    @Autowired
+    private StoreService storeService;
 
 
     public TaskDispatcherService() {
         pool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
-        for (int i = 0; i < NUMBER_OF_DISCS; i++) {
-            discs.add(new Disc(i));
-        }
 
         final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority).reversed();
         taskQueue = new PriorityBlockingQueue<>(30, taskPriority);
-
         executeTasks();
 
     }
@@ -42,25 +39,35 @@ public class TaskDispatcherService {
         final int resourceAllocationTime = calculateTaskResourceAllocationTime();
         final Long requestPriority = calculateTaskPriority();
 
-        final SaveFileTask saveFileTask = new SaveFileTask(queuedUserRequest, resourceAllocationTime, requestPriority);
+        final SaveFileTask saveFileTask = new SaveFileTask(storeService, queuedUserRequest, resourceAllocationTime, requestPriority);
 
         taskQueue.add(saveFileTask);
     }
 
     private void executeTasks() {
 
-        while (true) {
-            if (!taskQueue.isEmpty()) {
-                final Task polledTask = taskQueue.poll();
-                final int remainingExecutionTime = calculateRemainingExecutionTime(polledTask);
-                polledTask.getUserRequestDetails().setExecutionTimeLeft(remainingExecutionTime);
-                pool.submit(polledTask);
+        new Thread(()->{
+            while (true) {
+                if (!taskQueue.isEmpty()) {
+                    final Task polledTask = taskQueue.poll();
+                    System.out.println("new task in queue: " + polledTask.getUserRequestDetails().getUser());
+                    final int remainingExecutionTime = calculateRemainingExecutionTime(polledTask);
+                    polledTask.getUserRequestDetails().setFileSavingTime(remainingExecutionTime);
+                    pool.submit(polledTask);
 
-                if (remainingExecutionTime > 0) {
-                    taskQueue.add(polledTask);
+//                    if (remainingExecutionTime > 0) {
+//                        //todo modify priority
+//                        //todo update csv file
+//                        taskQueue.add(polledTask);
+//                    }
+//                    else{
+////                    TODO notify client (add to some kind of "done" collection
+////                     so that user can track if the file had been stored
+//                    }
                 }
-            }
         }
+        }).start();
+
     }
 
 
@@ -78,15 +85,11 @@ public class TaskDispatcherService {
 
     private int calculateRemainingExecutionTime(Task task) {
 
-        final int taskExecutionTimeLeft = task.getUserRequestDetails().getExecutionTimeLeft();
+        final int taskExecutionTimeLeft = task.getUserRequestDetails().getFileSavingTime();
         final int allowedExecutionTime = task.getAllowedExecutionTime();
         final int remainingTime = taskExecutionTimeLeft - allowedExecutionTime;
         return remainingTime > 0 ? remainingTime : EXECUTION_OVER;
     }
-
-//np> prioryted wyzszy im nizsza jego wartosc. biore timestampa w longu.
-// im mniejszy plik to dziele tę wartość na 2,3,4,5 itp. Im wiecej
-
 
 
 }

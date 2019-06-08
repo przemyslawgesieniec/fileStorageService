@@ -1,18 +1,19 @@
 package pl.gesieniec.mpw_server.controller;
 
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
-import pl.gesieniec.mpw_server.service.StoreService;
+import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.service.TaskDispatcherService;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Controller
+@RestController
 public class FileUpploadController {
 
     @Autowired
@@ -20,13 +21,17 @@ public class FileUpploadController {
 
     @PostMapping("/upload")
     public ResponseEntity uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("user") String user)
-            throws InterruptedException, IOException {
+            throws IOException {
 
-        System.out.println("przyszło");
-        QueuedUserRequest queuedUserRequest = new QueuedUserRequest(file, user);
+        UserFileData userFileData = new UserFileData(file.getOriginalFilename(), file.getSize(), new String(file.getBytes()));
+        QueuedUserRequest queuedUserRequest = new QueuedUserRequest(user, userFileData);
         taskDispatcherService.submitNewTaskRequest(queuedUserRequest);
-        System.out.println("zapisano " + file.getOriginalFilename());
-        return ResponseEntity.ok().body(file.getName());
+        return ResponseEntity.ok().body(userFileData);
+    }
+
+    @GetMapping("/health")
+    public String healthCheck() {
+        return "ok";
     }
 
 }
