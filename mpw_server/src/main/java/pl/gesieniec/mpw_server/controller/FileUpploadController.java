@@ -29,6 +29,14 @@ public class FileUpploadController {
         return ResponseEntity.ok().body(userFileData);
     }
 
+    @GetMapping("/sync")
+    public String getListOfRemotelyStoredFiles(@RequestParam("user") final String user){
+
+
+        return "";
+
+    }
+
     @GetMapping("/health")
     public String healthCheck() {
         return "ok";

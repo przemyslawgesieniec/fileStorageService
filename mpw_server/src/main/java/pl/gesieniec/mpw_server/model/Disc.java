@@ -26,6 +26,7 @@ public class Disc {
 
         stubSavingTime(userRequest.getFileSavingTime());
         saveFile(userRequest.getUserFileData());
+        System.out.println("file of user: "+userRequest.getUser());
         updateCsvFile(userRequest.getUserFileData().getOriginalFileName(), userRequest.getUserFileData().getServerFileName(), userRequest.getUser());
 
     }

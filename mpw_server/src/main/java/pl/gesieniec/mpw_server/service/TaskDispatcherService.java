@@ -1,10 +1,12 @@
 package pl.gesieniec.mpw_server.service;
 
+import lombok.Getter;
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
 import java.lang.management.ManagementFactory;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -23,6 +25,7 @@ public class TaskDispatcherService {
     private static Map<String, Integer> userRequestsCounter;
     private static long timeReferenceValue = 0L;
 
+    @Getter
     private BlockingQueue<Task> taskQueue;
     private ExecutorService pool;
 
@@ -35,11 +38,16 @@ public class TaskDispatcherService {
 
         userRequestsCounter = new ConcurrentHashMap<>();
 
-        final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority).reversed();
+        final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority);
         taskQueue = new PriorityBlockingQueue<>(30, taskPriority);
         executeTasks();
 
     }
+
+//    public List<String> findAllFileNamesForUser(final String user){
+//
+//
+//    }
 
     public void submitNewTaskRequest(QueuedUserRequest queuedUserRequest) {
 
