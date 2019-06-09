@@ -13,12 +13,7 @@ public class QueuedUserRequest {
     private Long requestTimestamp;
     private UUID requestID;
     private UserFileData userFileData;
-
-    @Setter
     private int fileSavingTime;
-
-    @Setter
-    private boolean isBoundToDisc;
 
 
     public QueuedUserRequest(String user, UserFileData userFileData) {
@@ -26,8 +21,7 @@ public class QueuedUserRequest {
         this.requestID = UUID.randomUUID();
         this.user = user;
         this.requestTimestamp = Instant.now().toEpochMilli();
-        this.fileSavingTime = (new Random().nextInt(9) + 20) * 1000; //9s - 30s
-        this.isBoundToDisc = false;
+        this.fileSavingTime = (new Random().nextInt(5) + 20) * 1000; //5s - 20s
         this.userFileData = userFileData;
     }
 }

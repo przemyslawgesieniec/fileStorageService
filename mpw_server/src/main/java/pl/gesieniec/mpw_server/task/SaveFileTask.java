@@ -7,12 +7,10 @@ public class SaveFileTask implements Task {
 
     private StoreService storeService;
     private QueuedUserRequest queuedUserRequest;
-    private int allowedExecutionTime;
     private Long requestPriority;
 
-    public SaveFileTask(StoreService storeService, QueuedUserRequest queuedUserRequest, int allowedExecutionTime, Long requestPriority) {
+    public SaveFileTask(StoreService storeService, QueuedUserRequest queuedUserRequest, Long requestPriority) {
         this.queuedUserRequest = queuedUserRequest;
-        this.allowedExecutionTime = allowedExecutionTime;
         this.requestPriority = requestPriority;
         this.storeService = storeService;
     }
@@ -25,18 +23,12 @@ public class SaveFileTask implements Task {
 
     @Override
     public Long getRequestPriority() {
-
         return requestPriority;
     }
 
     @Override
     public QueuedUserRequest getUserRequestDetails() {
         return queuedUserRequest;
-    }
-
-    @Override
-    public int getAllowedExecutionTime() {
-        return allowedExecutionTime;
     }
 
 

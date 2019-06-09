@@ -3,8 +3,12 @@ package pl.gesieniec.mpw_server.service;
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
+import java.lang.management.ManagementFactory;
 import java.util.Comparator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -16,7 +20,8 @@ import org.springframework.stereotype.Service;
 public class TaskDispatcherService {
 
     private final static int NUMBER_OF_DISCS = 5;
-    private static final int EXECUTION_OVER = 0;
+    private static Map<String, Integer> userRequestsCounter;
+    private static long timeReferenceValue = 0L;
 
     private BlockingQueue<Task> taskQueue;
     private ExecutorService pool;
@@ -28,6 +33,8 @@ public class TaskDispatcherService {
     public TaskDispatcherService() {
         pool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
 
+        userRequestsCounter = new ConcurrentHashMap<>();
+
         final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority).reversed();
         taskQueue = new PriorityBlockingQueue<>(30, taskPriority);
         executeTasks();
@@ -36,60 +43,71 @@ public class TaskDispatcherService {
 
     public void submitNewTaskRequest(QueuedUserRequest queuedUserRequest) {
 
-        final int resourceAllocationTime = calculateTaskResourceAllocationTime();
-        final Long requestPriority = calculateTaskPriority();
-
-        final SaveFileTask saveFileTask = new SaveFileTask(storeService, queuedUserRequest, resourceAllocationTime, requestPriority);
+        final Long taskPriority = calculateTaskPriority(queuedUserRequest);
+        final SaveFileTask saveFileTask = new SaveFileTask(storeService, queuedUserRequest, taskPriority);
 
         taskQueue.add(saveFileTask);
     }
 
     private void executeTasks() {
 
-        new Thread(()->{
+        new Thread(() -> {
             while (true) {
                 if (!taskQueue.isEmpty()) {
                     final Task polledTask = taskQueue.poll();
                     System.out.println("new task in queue: " + polledTask.getUserRequestDetails().getUser());
-                    final int remainingExecutionTime = calculateRemainingExecutionTime(polledTask);
-                    polledTask.getUserRequestDetails().setFileSavingTime(remainingExecutionTime);
                     pool.submit(polledTask);
-
-//                    if (remainingExecutionTime > 0) {
-//                        //todo modify priority
-//                        //todo update csv file
-//                        taskQueue.add(polledTask);
-//                    }
-//                    else{
-////                    TODO notify client (add to some kind of "done" collection
-////                     so that user can track if the file had been stored
-//                    }
                 }
-        }
+//                else {
+////                    resetPriorityFactors();
+////                }
+            }
         }).start();
 
     }
 
+//    private void resetPriorityFactors() {
+//
+//        System.out.println("REFERENCE FACTORS RESET");
+//        userRequestsCounter.clear();
+//        timeReferenceValue = ManagementFactory.getRuntimeMXBean().getUptime()/1000;
+//    }
 
-    private int calculateTaskResourceAllocationTime() {
 
-        //TODO algorithm
-        return 10;
+    private Long calculateTaskPriority(QueuedUserRequest queuedUserRequest) {
+
+        final long uptimeInSeconds = getTaskArrivalTimeReference();
+
+        final long numberOfUsersRequest = getNumberOfUsersRequest(queuedUserRequest.getUser());
+        final long calculatedFileSizePriorityFactor = calculateFileSizePriorityFactor(queuedUserRequest.getFileSavingTime());
+
+        System.out.println("numberOfUsersRequest: " + numberOfUsersRequest);
+        return uptimeInSeconds + numberOfUsersRequest*numberOfUsersRequest + calculatedFileSizePriorityFactor;
     }
 
-    private Long calculateTaskPriority() {
+    private int calculateFileSizePriorityFactor(int savingTime) {
 
-        //TODO algorithm
-        return 1L;
+        if (savingTime < 10) {
+            return 0;
+        } else if (savingTime < 20) {
+            return 10;
+        } else {
+            return 20;
+        }
     }
 
-    private int calculateRemainingExecutionTime(Task task) {
+    private int getNumberOfUsersRequest( final String userName){
 
-        final int taskExecutionTimeLeft = task.getUserRequestDetails().getFileSavingTime();
-        final int allowedExecutionTime = task.getAllowedExecutionTime();
-        final int remainingTime = taskExecutionTimeLeft - allowedExecutionTime;
-        return remainingTime > 0 ? remainingTime : EXECUTION_OVER;
+        final int numberOfUserRequests = 1 + Optional.ofNullable(userRequestsCounter
+                .get(userName))
+                .orElse(0);
+        userRequestsCounter.put(userName,numberOfUserRequests);
+
+        return numberOfUserRequests;
     }
 
+    private long getTaskArrivalTimeReference(){
+        return ManagementFactory.getRuntimeMXBean().getUptime()/1000 - timeReferenceValue;
+    }
 
 }

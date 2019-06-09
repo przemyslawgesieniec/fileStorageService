@@ -6,5 +6,4 @@ public interface Task extends Runnable {
 
     Long getRequestPriority();
     QueuedUserRequest getUserRequestDetails();
-    int getAllowedExecutionTime();
 }
