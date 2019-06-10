@@ -1,7 +1,6 @@
 package pl.gesieniec.mpw_server.model;
 
 import lombok.Getter;
-import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
 
@@ -9,7 +8,6 @@ import java.util.UUID;
 public class QueuedUserRequest {
 
     private String user;
-    private Long requestTimestamp;
     private UUID requestID;
     private UserFileData userFileData;
     private int fileSavingTime;
@@ -19,9 +17,7 @@ public class QueuedUserRequest {
 
         this.requestID = UUID.randomUUID();
         this.user = user;
-        this.requestTimestamp = Instant.now().toEpochMilli();
-        this.fileSavingTime = (new Random().nextInt(5) + 20) * 1000; //5s - 20s
-//        this.fileSavingTime = 10000;
+        this.fileSavingTime = (new Random().nextInt(22) + 8) * 1000; //8s - 30s
         this.userFileData = userFileData;
     }
 }

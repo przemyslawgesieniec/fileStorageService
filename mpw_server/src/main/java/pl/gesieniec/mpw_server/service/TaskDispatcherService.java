@@ -6,7 +6,6 @@ import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
 import java.lang.management.ManagementFactory;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -44,16 +43,11 @@ public class TaskDispatcherService {
 
     }
 
-//    public List<String> findAllFileNamesForUser(final String user){
-//
-//
-//    }
-
     public void submitNewTaskRequest(QueuedUserRequest queuedUserRequest) {
 
         final Long taskPriority = calculateTaskPriority(queuedUserRequest);
+        System.out.println("TaskDispatcherService::::File " + queuedUserRequest.getUserFileData().getServerFileName() + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
         final SaveFileTask saveFileTask = new SaveFileTask(storeService, queuedUserRequest, taskPriority);
-
         taskQueue.add(saveFileTask);
     }
 
@@ -63,24 +57,13 @@ public class TaskDispatcherService {
             while (true) {
                 if (!taskQueue.isEmpty()) {
                     final Task polledTask = taskQueue.poll();
-                    System.out.println("new task in queue: " + polledTask.getUserRequestDetails().getUser());
+                    System.out.println("TaskDispatcherService::::new task of user " + polledTask.getUserRequestDetails().getUser() + " in queue: ");
                     pool.submit(polledTask);
                 }
-//                else {
-////                    resetPriorityFactors();
-////                }
             }
         }).start();
 
     }
-
-//    private void resetPriorityFactors() {
-//
-//        System.out.println("REFERENCE FACTORS RESET");
-//        userRequestsCounter.clear();
-//        timeReferenceValue = ManagementFactory.getRuntimeMXBean().getUptime()/1000;
-//    }
-
 
     private Long calculateTaskPriority(QueuedUserRequest queuedUserRequest) {
 
@@ -89,8 +72,7 @@ public class TaskDispatcherService {
         final long numberOfUsersRequest = getNumberOfUsersRequest(queuedUserRequest.getUser());
         final long calculatedFileSizePriorityFactor = calculateFileSizePriorityFactor(queuedUserRequest.getFileSavingTime());
 
-        System.out.println("numberOfUsersRequest: " + numberOfUsersRequest);
-        return uptimeInSeconds + numberOfUsersRequest*numberOfUsersRequest + calculatedFileSizePriorityFactor;
+        return uptimeInSeconds + 2 * numberOfUsersRequest * numberOfUsersRequest + calculatedFileSizePriorityFactor;
     }
 
     private int calculateFileSizePriorityFactor(int savingTime) {
@@ -104,18 +86,18 @@ public class TaskDispatcherService {
         }
     }
 
-    private int getNumberOfUsersRequest( final String userName){
+    private int getNumberOfUsersRequest(final String userName) {
 
         final int numberOfUserRequests = 1 + Optional.ofNullable(userRequestsCounter
                 .get(userName))
                 .orElse(0);
-        userRequestsCounter.put(userName,numberOfUserRequests);
+        userRequestsCounter.put(userName, numberOfUserRequests);
 
         return numberOfUserRequests;
     }
 
-    private long getTaskArrivalTimeReference(){
-        return ManagementFactory.getRuntimeMXBean().getUptime()/1000 - timeReferenceValue;
+    private long getTaskArrivalTimeReference() {
+        return ManagementFactory.getRuntimeMXBean().getUptime() / 1000 - timeReferenceValue;
     }
 
 }

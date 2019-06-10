@@ -22,9 +22,9 @@ public class StoreService {
 
     public void storeFile(QueuedUserRequest queuedUserRequest) {
 
-        System.out.println("Store Service: available discs: " + discs.size());
+        System.out.println("Store Service::::: available discs: " + discs.size());
         final Disc polledDisc = discs.poll();
-        System.out.println("Store Service: polled disc:" + polledDisc.getDiscNumber());
+        System.out.println("Store Service::::: polled disc:" + polledDisc.getDiscNumber());
 
         polledDisc.save(queuedUserRequest);
         discs.add(polledDisc);

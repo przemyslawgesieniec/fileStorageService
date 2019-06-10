@@ -17,7 +17,6 @@ public class SaveFileTask implements Task {
 
     @Override
     public void run() {
-        System.out.println("send for storing");
         storeService.storeFile(queuedUserRequest);
     }
 

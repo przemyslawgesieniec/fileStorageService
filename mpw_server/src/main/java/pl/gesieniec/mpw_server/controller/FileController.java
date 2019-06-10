@@ -2,8 +2,10 @@ package pl.gesieniec.mpw_server.controller;
 
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.model.UserFileData;
+import pl.gesieniec.mpw_server.service.SynchronizationService;
 import pl.gesieniec.mpw_server.service.TaskDispatcherService;
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-public class FileUpploadController {
+public class FileController {
 
     @Autowired
     private TaskDispatcherService taskDispatcherService;
+
+    @Autowired
+    private SynchronizationService synchronizationService;
 
     @PostMapping("/upload")
     public ResponseEntity uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("user") String user)
@@ -30,12 +35,13 @@ public class FileUpploadController {
     }
 
     @GetMapping("/sync")
-    public String getListOfRemotelyStoredFiles(@RequestParam("user") final String user){
+    public List<String> getListOfRemotelyStoredFiles(@RequestParam("user") final String user){
 
-
-        return "";
-
+        final List<String> allUserStoredFiles = synchronizationService.getAllUserStoredFiles(user);
+        return allUserStoredFiles;
     }
+
+
 
     @GetMapping("/health")
     public String healthCheck() {

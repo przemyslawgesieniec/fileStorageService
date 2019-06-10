@@ -26,7 +26,7 @@ public class Disc {
 
         stubSavingTime(userRequest.getFileSavingTime());
         saveFile(userRequest.getUserFileData());
-        System.out.println("file of user: "+userRequest.getUser());
+        System.out.println("Disc::::file of user: "+userRequest.getUser() + "saved properly");
         updateCsvFile(userRequest.getUserFileData().getOriginalFileName(), userRequest.getUserFileData().getServerFileName(), userRequest.getUser());
 
     }
@@ -48,7 +48,6 @@ public class Disc {
         try (BufferedWriter writer = Files.newBufferedWriter(filepath)) {
             writer.write(userFileData.getContent());
             writer.flush();
-            System.out.println("File " + userFileData.getServerFileName() + " saved properly");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -60,13 +59,13 @@ public class Disc {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        System.out.println("saving in progress");
+        System.out.println("Disc::::saving in progress");
         try {
             Thread.sleep(savingTime);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         stopWatch.stop();
-        System.out.println("file saved in: " + stopWatch.getTotalTimeMillis() + "ms");
+        System.out.println("Disc::::file saved in: " + stopWatch.getTotalTimeMillis()/1000 + "s");
     }
 }
