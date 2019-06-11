@@ -25,4 +25,9 @@ public class QueuedUserDownloadRequest implements QueuedUserRequest {
     public int getFileProcessingTime() {
         return fileProcessingTime;
     }
+
+    @Override
+    public String getFileName() {
+        return fileServerName;
+    }
 }

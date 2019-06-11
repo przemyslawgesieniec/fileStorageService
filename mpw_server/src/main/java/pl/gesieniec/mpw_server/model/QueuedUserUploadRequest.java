@@ -20,4 +20,9 @@ public class QueuedUserUploadRequest implements QueuedUserRequest{
         this.fileProcessingTime = (new Random().nextInt(22) + 8) * 1000; //8s - 30s
         this.userFileData = userFileData;
     }
+
+    @Override
+    public String getFileName() {
+        return userFileData.getOriginalFileName();
+    }
 }

@@ -7,6 +7,7 @@ import pl.gesieniec.mpw_server.task.DownloadFileTask;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -68,9 +70,22 @@ public class TaskDispatcherService {
         downloadQueue.add(downloadFileTask);
     }
 
-    public void tryToDownload(List<String> filesNames) {
+    public void tryToDownload(final List<String> filesNames) {
 
-        downloadService.
+        List<String> filesContent = new ArrayList<>();
+
+        final Map<String, Task> queueSnapshot = readyToDownloadQueueSnapshot();
+
+        queueSnapshot.entrySet()
+                .stream()
+                .filter(e -> filesNames.contains(e.getKey()))
+                .map(Map.Entry::getValue)
+                .forEach(task -> {
+                    filesContent.add(downloadService.readRequestedFile())
+                });
+
+
+//        downloadService.
     }
 
     private void executeSavingTasks() {
@@ -122,8 +137,12 @@ public class TaskDispatcherService {
         return ManagementFactory.getRuntimeMXBean().getUptime() / 1000;
     }
 
-    private List<Task> downloadQueueSnapshot(){
-        downloadQueue.stream().limit(5).map(task -> task.getUserRequestDetails())
+    private synchronized Map<String, Task> readyToDownloadQueueSnapshot() {
+        return downloadQueue.stream()
+                .limit(5)
+                .collect(Collectors
+                        .toMap(k -> k.getQueuedUserRequest().getFileName(), v -> v));
+
     }
 
 }

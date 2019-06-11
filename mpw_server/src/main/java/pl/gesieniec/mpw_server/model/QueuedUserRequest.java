@@ -4,4 +4,5 @@ public interface QueuedUserRequest {
 
     String getUser();
     int getFileProcessingTime();
+    String getFileName();
 }
