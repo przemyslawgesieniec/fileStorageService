@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.UUID;
 
 @Getter
-public class QueuedUserUploadRequest {
+public class QueuedUserUploadRequest implements QueuedUserRequest{
 
     private String user;
     private UUID requestID;

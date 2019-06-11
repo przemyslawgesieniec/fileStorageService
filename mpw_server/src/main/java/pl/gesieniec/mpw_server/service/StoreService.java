@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class StoreService {
 
-
     private BlockingQueue<Disc> discs = new LinkedBlockingQueue<>(5);
 
     public StoreService() {

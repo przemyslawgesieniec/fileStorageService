@@ -1,5 +1,6 @@
 package pl.gesieniec.mpw_server.task;
 
+import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
 import pl.gesieniec.mpw_server.service.StoreService;
 
@@ -26,7 +27,7 @@ public class SaveFileTask implements Task {
     }
 
     @Override
-    public QueuedUserUploadRequest getUserRequestDetails() {
+    public QueuedUserRequest getQueuedUserRequest() {
         return queuedUserRequest;
     }
 

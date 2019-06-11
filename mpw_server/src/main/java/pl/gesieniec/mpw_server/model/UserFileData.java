@@ -16,6 +16,14 @@ public class UserFileData {
         this.content = content;
     }
 
+    public UserFileData(long fileSize, String content, String serverFileName) {
+        final int length = UUID.randomUUID().toString().length();
+        this.originalFileName = serverFileName.substring(length);
+        this.serverFileName = serverFileName;
+        this.fileSize = fileSize;
+        this.content = content;
+    }
+
     private String originalFileName;
     private String serverFileName;
     private long fileSize;

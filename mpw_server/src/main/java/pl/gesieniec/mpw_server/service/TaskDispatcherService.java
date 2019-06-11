@@ -3,10 +3,12 @@ package pl.gesieniec.mpw_server.service;
 import lombok.Getter;
 import pl.gesieniec.mpw_server.model.QueuedUserDownloadRequest;
 import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
+import pl.gesieniec.mpw_server.task.DownloadFileTask;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
 import java.lang.management.ManagementFactory;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -23,7 +25,6 @@ public class TaskDispatcherService {
 
     private final static int NUMBER_OF_DISCS = 5;
     private static Map<String, Integer> userRequestsCounter;
-    private static long timeReferenceValue = 0L;
 
     @Getter
     private BlockingQueue<Task> uploadQueue;
@@ -41,14 +42,13 @@ public class TaskDispatcherService {
 
     public TaskDispatcherService() {
         uploadPool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
-        downloadPool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
 
         userRequestsCounter = new ConcurrentHashMap<>();
 
         final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority);
         uploadQueue = new PriorityBlockingQueue<>(30, taskPriority);
         downloadQueue = new PriorityBlockingQueue<>(30, taskPriority);
-        executeTasks();
+        executeSavingTasks();
 
     }
 
@@ -62,17 +62,18 @@ public class TaskDispatcherService {
 
     public void submitNewDownloadRequest(final QueuedUserDownloadRequest queuedUserRequest) {
 
-        queuedUserRequest.getFilesProcessingTime().forEach((serverFileName, processingTime) -> {
-            final Long taskPriority = calculateTaskPriority(queuedUserRequest.getUser(), processingTime);
-            System.out.println("TaskDispatcherService:DOWNLOAD:::File " + serverFileName + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
-
-//            downloadQueue.add()
-        });
-
-
+        final Long taskPriority = calculateTaskPriority(queuedUserRequest.getUser(), queuedUserRequest.getFileProcessingTime());
+        System.out.println("TaskDispatcherService:DOWNLOAD:::File " + queuedUserRequest.getFileServerName() + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
+        final DownloadFileTask downloadFileTask = new DownloadFileTask(downloadService, queuedUserRequest, taskPriority);
+        downloadQueue.add(downloadFileTask);
     }
 
-    private void executeTasks() {
+    public void tryToDownload(List<String> filesNames) {
+
+        downloadService.
+    }
+
+    private void executeSavingTasks() {
 
         new Thread(() -> {
             while (true) {
@@ -118,7 +119,11 @@ public class TaskDispatcherService {
     }
 
     private long getTaskArrivalTimeReference() {
-        return ManagementFactory.getRuntimeMXBean().getUptime() / 1000 - timeReferenceValue;
+        return ManagementFactory.getRuntimeMXBean().getUptime() / 1000;
+    }
+
+    private List<Task> downloadQueueSnapshot(){
+        downloadQueue.stream().limit(5).map(task -> task.getUserRequestDetails())
     }
 
 }

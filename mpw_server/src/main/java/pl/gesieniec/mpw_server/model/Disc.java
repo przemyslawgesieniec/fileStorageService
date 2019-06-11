@@ -2,11 +2,14 @@ package pl.gesieniec.mpw_server.model;
 
 import lombok.Getter;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
@@ -15,28 +18,56 @@ import org.springframework.util.StringUtils;
 public class Disc {
 
     private String path;
+    private String directoryPath;
+    private String csvFilePath;
     private int discNumber;
 
     public Disc(int discNumber) {
         this.discNumber = discNumber;
-        path = "storage/disc" + discNumber + "/";
+        directoryPath = "storage/disc" + discNumber;
+        path = directoryPath + "/";
+        csvFilePath = path + "d.csv";
     }
 
     public void save(final QueuedUserUploadRequest userRequest) {
 
-        stubSavingTime(userRequest.getFileProcessingTime());
+        stubProcessingTime(userRequest.getFileProcessingTime());
         saveFile(userRequest.getUserFileData());
-        System.out.println("Disc::::file of user: "+userRequest.getUser() + "saved properly");
+        System.out.println("Disc::::file of user: " + userRequest.getUser() + "saved properly");
         updateCsvFile(userRequest.getUserFileData().getOriginalFileName(), userRequest.getUserFileData().getServerFileName(), userRequest.getUser());
 
     }
 
-    public void read(final QueuedUserUploadRequest queuedUserRequest){
+    public UserFileData read(final QueuedUserDownloadRequest userRequest) {
 
+        stubProcessingTime(userRequest.getFileProcessingTime());
+        String fileContent = getFileContent(userRequest.getFileServerName());
+        System.out.println("Disc::::file of user: " + userRequest.getUser() + "downloaded properly");
+        return new UserFileData(userRequest.getFileProcessingTime(), fileContent, userRequest.getFileServerName());
+    }
+
+    private String getFileContent(String fileServerName) {
+
+        File directory = new File(directoryPath);
+
+        final String fileContent = Arrays.stream(directory.listFiles())
+                .filter(file -> file.getName().equals(fileServerName))
+                .findFirst().map(file -> {
+                    try {
+                        return Files.readString(Paths.get(file.toURI()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                })
+                .orElse("");
+
+
+        return fileContent;
     }
 
     private synchronized void updateCsvFile(final String originalFileName, final String serverFileName, final String username) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path + "d.csv", true))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(csvFilePath, true))) {
             writer.append(serverFileName).append(",").append(username).append(",").append(originalFileName);
             writer.newLine();
         } catch (IOException e) {
@@ -55,11 +86,9 @@ public class Disc {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
-
-    private void stubSavingTime(final int savingTime) {
+    private void stubProcessingTime(final int savingTime) {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -70,6 +99,16 @@ public class Disc {
             e.printStackTrace();
         }
         stopWatch.stop();
-        System.out.println("Disc::::file saved in: " + stopWatch.getTotalTimeMillis()/1000 + "s");
+        System.out.println("Disc::::file saved in: " + stopWatch.getTotalTimeMillis() / 1000 + "s");
+    }
+
+    public synchronized boolean isStoringUserFile(String fileName) {
+
+        try (Stream<String> lines = Files.lines(Paths.get(csvFilePath))) {
+            return lines.anyMatch(line -> line.contains(fileName));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

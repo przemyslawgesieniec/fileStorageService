@@ -36,18 +36,30 @@ public class FileController {
     }
 
     @GetMapping("/sync")
-    public List<String> getListOfRemotelyStoredFiles(@RequestParam("user") final String user){
+    public List<String> getListOfRemotelyStoredFiles(@RequestParam("user") final String user) {
 
         final List<String> allUserStoredFiles = synchronizationService.getAllUserStoredFiles(user);
         return allUserStoredFiles;
     }
 
 
-    @GetMapping("/download")
-    public String requestDownloadingFiles(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames){
+    @GetMapping("/request/download")
+    public String requestDownloadingFiles(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
 
-        QueuedUserDownloadRequest queuedUserDownloadRequest = new QueuedUserDownloadRequest(user,filesNames);
-        taskDispatcherService.submitNewDownloadRequest(queuedUserDownloadRequest);
+        filesNames.forEach(e -> {
+            QueuedUserDownloadRequest queuedUserDownloadRequest = new QueuedUserDownloadRequest(user, e);
+            taskDispatcherService.submitNewDownloadRequest(queuedUserDownloadRequest);
+        });
+
+
+        return "processing";
+
+    }
+
+    @GetMapping("/download")
+    public String downloadAnyOfRequested(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
+
+        taskDispatcherService.tryToDownload(filesNames);
 
         return "processing";
 
