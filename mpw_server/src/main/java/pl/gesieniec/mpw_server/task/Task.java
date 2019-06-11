@@ -1,9 +1,9 @@
 package pl.gesieniec.mpw_server.task;
 
-import pl.gesieniec.mpw_server.model.QueuedUserRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
 
 public interface Task extends Runnable {
 
     Long getRequestPriority();
-    QueuedUserRequest getUserRequestDetails();
+    QueuedUserUploadRequest getUserRequestDetails();
 }

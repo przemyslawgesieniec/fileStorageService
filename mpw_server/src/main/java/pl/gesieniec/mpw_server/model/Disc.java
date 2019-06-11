@@ -22,12 +22,16 @@ public class Disc {
         path = "storage/disc" + discNumber + "/";
     }
 
-    public void save(final QueuedUserRequest userRequest) {
+    public void save(final QueuedUserUploadRequest userRequest) {
 
-        stubSavingTime(userRequest.getFileSavingTime());
+        stubSavingTime(userRequest.getFileProcessingTime());
         saveFile(userRequest.getUserFileData());
         System.out.println("Disc::::file of user: "+userRequest.getUser() + "saved properly");
         updateCsvFile(userRequest.getUserFileData().getOriginalFileName(), userRequest.getUserFileData().getServerFileName(), userRequest.getUser());
+
+    }
+
+    public void read(final QueuedUserUploadRequest queuedUserRequest){
 
     }
 

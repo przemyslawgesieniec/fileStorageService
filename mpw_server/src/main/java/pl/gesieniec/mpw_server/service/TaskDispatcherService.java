@@ -1,7 +1,8 @@
 package pl.gesieniec.mpw_server.service;
 
 import lombok.Getter;
-import pl.gesieniec.mpw_server.model.QueuedUserRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserDownloadRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
 import java.lang.management.ManagementFactory;
@@ -25,52 +26,72 @@ public class TaskDispatcherService {
     private static long timeReferenceValue = 0L;
 
     @Getter
-    private BlockingQueue<Task> taskQueue;
-    private ExecutorService pool;
+    private BlockingQueue<Task> uploadQueue;
+    private BlockingQueue<Task> downloadQueue;
+
+    private ExecutorService uploadPool;
+    private ExecutorService downloadPool;
 
     @Autowired
     private StoreService storeService;
 
+    @Autowired
+    private DownloadService downloadService;
+
 
     public TaskDispatcherService() {
-        pool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
+        uploadPool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
+        downloadPool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
 
         userRequestsCounter = new ConcurrentHashMap<>();
 
         final Comparator<Task> taskPriority = Comparator.comparing(Task::getRequestPriority);
-        taskQueue = new PriorityBlockingQueue<>(30, taskPriority);
+        uploadQueue = new PriorityBlockingQueue<>(30, taskPriority);
+        downloadQueue = new PriorityBlockingQueue<>(30, taskPriority);
         executeTasks();
 
     }
 
-    public void submitNewTaskRequest(QueuedUserRequest queuedUserRequest) {
+    public void submitNewUploadRequest(final QueuedUserUploadRequest queuedUserRequest) {
 
-        final Long taskPriority = calculateTaskPriority(queuedUserRequest);
-        System.out.println("TaskDispatcherService::::File " + queuedUserRequest.getUserFileData().getServerFileName() + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
+        final Long taskPriority = calculateTaskPriority(queuedUserRequest.getUser(), queuedUserRequest.getFileProcessingTime());
+        System.out.println("TaskDispatcherService:UPLOAD:::File " + queuedUserRequest.getUserFileData().getServerFileName() + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
         final SaveFileTask saveFileTask = new SaveFileTask(storeService, queuedUserRequest, taskPriority);
-        taskQueue.add(saveFileTask);
+        uploadQueue.add(saveFileTask);
+    }
+
+    public void submitNewDownloadRequest(final QueuedUserDownloadRequest queuedUserRequest) {
+
+        queuedUserRequest.getFilesProcessingTime().forEach((serverFileName, processingTime) -> {
+            final Long taskPriority = calculateTaskPriority(queuedUserRequest.getUser(), processingTime);
+            System.out.println("TaskDispatcherService:DOWNLOAD:::File " + serverFileName + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
+
+//            downloadQueue.add()
+        });
+
+
     }
 
     private void executeTasks() {
 
         new Thread(() -> {
             while (true) {
-                if (!taskQueue.isEmpty()) {
-                    final Task polledTask = taskQueue.poll();
+                if (!uploadQueue.isEmpty()) {
+                    final Task polledTask = uploadQueue.poll();
                     System.out.println("TaskDispatcherService::::new task of user " + polledTask.getUserRequestDetails().getUser() + " in queue: ");
-                    pool.submit(polledTask);
+                    uploadPool.submit(polledTask);
                 }
             }
         }).start();
 
     }
 
-    private Long calculateTaskPriority(QueuedUserRequest queuedUserRequest) {
+    private Long calculateTaskPriority(final String userName, final int processingTime) {
 
         final long uptimeInSeconds = getTaskArrivalTimeReference();
 
-        final long numberOfUsersRequest = getNumberOfUsersRequest(queuedUserRequest.getUser());
-        final long calculatedFileSizePriorityFactor = calculateFileSizePriorityFactor(queuedUserRequest.getFileSavingTime());
+        final long numberOfUsersRequest = getNumberOfUsersRequest(userName);
+        final long calculatedFileSizePriorityFactor = calculateFileSizePriorityFactor(processingTime);
 
         return uptimeInSeconds + 2 * numberOfUsersRequest * numberOfUsersRequest + calculatedFileSizePriorityFactor;
     }

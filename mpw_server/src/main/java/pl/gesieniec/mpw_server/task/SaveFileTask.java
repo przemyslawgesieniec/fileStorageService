@@ -1,15 +1,15 @@
 package pl.gesieniec.mpw_server.task;
 
-import pl.gesieniec.mpw_server.model.QueuedUserRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
 import pl.gesieniec.mpw_server.service.StoreService;
 
 public class SaveFileTask implements Task {
 
     private StoreService storeService;
-    private QueuedUserRequest queuedUserRequest;
+    private QueuedUserUploadRequest queuedUserRequest;
     private Long requestPriority;
 
-    public SaveFileTask(StoreService storeService, QueuedUserRequest queuedUserRequest, Long requestPriority) {
+    public SaveFileTask(StoreService storeService, QueuedUserUploadRequest queuedUserRequest, Long requestPriority) {
         this.queuedUserRequest = queuedUserRequest;
         this.requestPriority = requestPriority;
         this.storeService = storeService;
@@ -26,7 +26,7 @@ public class SaveFileTask implements Task {
     }
 
     @Override
-    public QueuedUserRequest getUserRequestDetails() {
+    public QueuedUserUploadRequest getUserRequestDetails() {
         return queuedUserRequest;
     }
 

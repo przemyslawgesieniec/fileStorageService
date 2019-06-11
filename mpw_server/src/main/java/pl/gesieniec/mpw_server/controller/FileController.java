@@ -1,6 +1,7 @@
 package pl.gesieniec.mpw_server.controller;
 
-import pl.gesieniec.mpw_server.model.QueuedUserRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserDownloadRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
 import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.service.SynchronizationService;
 import pl.gesieniec.mpw_server.service.TaskDispatcherService;
@@ -29,8 +30,8 @@ public class FileController {
             throws IOException {
 
         UserFileData userFileData = new UserFileData(file.getOriginalFilename(), file.getSize(), new String(file.getBytes()));
-        QueuedUserRequest queuedUserRequest = new QueuedUserRequest(user, userFileData);
-        taskDispatcherService.submitNewTaskRequest(queuedUserRequest);
+        QueuedUserUploadRequest queuedUserRequest = new QueuedUserUploadRequest(user, userFileData);
+        taskDispatcherService.submitNewUploadRequest(queuedUserRequest);
         return ResponseEntity.ok().body(userFileData);
     }
 
@@ -41,6 +42,16 @@ public class FileController {
         return allUserStoredFiles;
     }
 
+
+    @GetMapping("/download")
+    public String requestDownloadingFiles(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames){
+
+        QueuedUserDownloadRequest queuedUserDownloadRequest = new QueuedUserDownloadRequest(user,filesNames);
+        taskDispatcherService.submitNewDownloadRequest(queuedUserDownloadRequest);
+
+        return "processing";
+
+    }
 
 
     @GetMapping("/health")
