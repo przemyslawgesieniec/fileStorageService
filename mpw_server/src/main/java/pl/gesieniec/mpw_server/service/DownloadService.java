@@ -2,6 +2,7 @@ package pl.gesieniec.mpw_server.service;
 
 import pl.gesieniec.mpw_server.model.Disc;
 import pl.gesieniec.mpw_server.model.QueuedUserDownloadRequest;
+import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.model.UserFileData;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -22,9 +23,9 @@ public class DownloadService {
         }
     }
 
-    public UserFileData readRequestedFile(QueuedUserDownloadRequest queuedUserDownloadRequest){
+    public UserFileData readRequestedFile(QueuedUserRequest queuedUserDownloadRequest){
 
-        final String fileName = queuedUserDownloadRequest.getFileServerName();
+        final String fileName = queuedUserDownloadRequest.getFileName();
         return discs.stream()
                 .filter(disc -> disc.isStoringUserFile(fileName))
                 .findFirst()

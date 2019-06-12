@@ -3,6 +3,7 @@ package pl.gesieniec.mpw_server.service;
 import lombok.Getter;
 import pl.gesieniec.mpw_server.model.QueuedUserDownloadRequest;
 import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
+import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.task.DownloadFileTask;
 import pl.gesieniec.mpw_server.task.SaveFileTask;
 import pl.gesieniec.mpw_server.task.Task;
@@ -70,9 +71,9 @@ public class TaskDispatcherService {
         downloadQueue.add(downloadFileTask);
     }
 
-    public void tryToDownload(final List<String> filesNames) {
+    public List<UserFileData> tryToDownload(final List<String> filesNames, String user) {
 
-        List<String> filesContent = new ArrayList<>();
+        List<UserFileData> filesContent = new ArrayList<>();
 
         final Map<String, Task> queueSnapshot = readyToDownloadQueueSnapshot();
 
@@ -81,11 +82,11 @@ public class TaskDispatcherService {
                 .filter(e -> filesNames.contains(e.getKey()))
                 .map(Map.Entry::getValue)
                 .forEach(task -> {
-                    filesContent.add(downloadService.readRequestedFile())
+                    filesContent.add(downloadService.readRequestedFile(task.getQueuedUserRequest()));
+                    downloadQueue.remove(task);
                 });
 
-
-//        downloadService.
+        return filesContent;
     }
 
     private void executeSavingTasks() {
@@ -94,7 +95,7 @@ public class TaskDispatcherService {
             while (true) {
                 if (!uploadQueue.isEmpty()) {
                     final Task polledTask = uploadQueue.poll();
-                    System.out.println("TaskDispatcherService::::new task of user " + polledTask.getUserRequestDetails().getUser() + " in queue: ");
+                    System.out.println("TaskDispatcherService::::new task of user " + polledTask.getQueuedUserRequest().getUser() + " in queue: ");
                     uploadPool.submit(polledTask);
                 }
             }

@@ -38,12 +38,12 @@ public class Disc {
 
     }
 
-    public UserFileData read(final QueuedUserDownloadRequest userRequest) {
+    public UserFileData read(final QueuedUserRequest userRequest) {
 
         stubProcessingTime(userRequest.getFileProcessingTime());
-        String fileContent = getFileContent(userRequest.getFileServerName());
+        String fileContent = getFileContent(userRequest.getFileName());
         System.out.println("Disc::::file of user: " + userRequest.getUser() + "downloaded properly");
-        return new UserFileData(userRequest.getFileProcessingTime(), fileContent, userRequest.getFileServerName());
+        return new UserFileData(userRequest.getFileProcessingTime(), fileContent, userRequest.getFileName());
     }
 
     private String getFileContent(String fileServerName) {

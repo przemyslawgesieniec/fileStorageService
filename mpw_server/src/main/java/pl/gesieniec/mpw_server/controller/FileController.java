@@ -6,10 +6,12 @@ import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.service.SynchronizationService;
 import pl.gesieniec.mpw_server.service.TaskDispatcherService;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,18 +53,22 @@ public class FileController {
             taskDispatcherService.submitNewDownloadRequest(queuedUserDownloadRequest);
         });
 
-
         return "processing";
 
     }
 
     @GetMapping("/download")
-    public String downloadAnyOfRequested(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
+    public List<MultipartFile> downloadAnyOfRequested(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
 
-        taskDispatcherService.tryToDownload(filesNames);
 
-        return "processing";
+        final List<UserFileData> userFileData = taskDispatcherService.tryToDownload(filesNames, user);
+        final List<MultipartFile> userRequestedFiles = new ArrayList<>();
 
+        userFileData.forEach(ufd ->
+                userRequestedFiles.add(new MockMultipartFile(ufd.getServerFileName(), ufd.getContent().getBytes())));
+
+
+        return userRequestedFiles;
     }
 
 
