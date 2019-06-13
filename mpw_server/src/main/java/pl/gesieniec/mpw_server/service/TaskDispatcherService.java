@@ -97,9 +97,7 @@ public class TaskDispatcherService {
                 });
         }
 
-        System.out.println("QUEUE SIEZE BEFORE: " + downloadQueue.size() );
         downloadQueue.removeAll(matchedUserTasksFromQueue);
-        System.out.println("QUEUE SIEZE AFTER: " + downloadQueue.size() );
 
         return filesContent;
     }

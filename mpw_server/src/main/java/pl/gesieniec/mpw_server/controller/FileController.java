@@ -39,6 +39,7 @@ public class FileController {
 
     @GetMapping("/sync")
     public List<String> getListOfRemotelyStoredFiles(@RequestParam("user") final String user) {
+        System.out.println("FILE CONTROLLER: user "+ user + " sync");
 
         final List<String> allUserStoredFiles = synchronizationService.getAllUserStoredFiles(user);
         return allUserStoredFiles;
