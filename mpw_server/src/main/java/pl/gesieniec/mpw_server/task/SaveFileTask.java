@@ -2,6 +2,7 @@ package pl.gesieniec.mpw_server.task;
 
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
 import pl.gesieniec.mpw_server.model.QueuedUserUploadRequest;
+import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.service.StoreService;
 
 public class SaveFileTask implements Task {
@@ -16,10 +17,6 @@ public class SaveFileTask implements Task {
         this.storeService = storeService;
     }
 
-    @Override
-    public void run() {
-        storeService.storeFile(queuedUserRequest);
-    }
 
     @Override
     public Long getRequestPriority() {
@@ -32,4 +29,9 @@ public class SaveFileTask implements Task {
     }
 
 
+    @Override
+    public UserFileData call() throws Exception {
+        storeService.storeFile(queuedUserRequest);
+        return null;
+    }
 }

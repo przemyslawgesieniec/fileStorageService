@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class DownloadService {
 
-    //method get queue snapshot
-
     private Queue<Disc> discs = new ConcurrentLinkedQueue<Disc>();
 
     public DownloadService() {

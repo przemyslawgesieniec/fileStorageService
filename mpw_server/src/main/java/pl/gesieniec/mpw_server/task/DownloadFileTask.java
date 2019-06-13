@@ -2,21 +2,21 @@ package pl.gesieniec.mpw_server.task;
 
 import pl.gesieniec.mpw_server.model.QueuedUserDownloadRequest;
 import pl.gesieniec.mpw_server.model.QueuedUserRequest;
+import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.service.DownloadService;
 
 public class DownloadFileTask implements Task {
 
 
-    private DownloadService downloadService;
     private QueuedUserDownloadRequest queuedUserDownloadRequest;
     private Long requestPriority;
+    private DownloadService downloadService;
 
-    public DownloadFileTask(final DownloadService downloadService,
-                            final QueuedUserDownloadRequest queuedUserDownloadRequest,
-                            final Long requestPriority) {
-        this.downloadService = downloadService;
+    public DownloadFileTask(final QueuedUserDownloadRequest queuedUserDownloadRequest,
+                            final Long requestPriority, DownloadService downloadService) {
         this.queuedUserDownloadRequest = queuedUserDownloadRequest;
         this.requestPriority = requestPriority;
+        this.downloadService = downloadService;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class DownloadFileTask implements Task {
     }
 
     @Override
-    public void run() {
-
+    public UserFileData call() throws Exception {
+        return downloadService.readRequestedFile(queuedUserDownloadRequest);
     }
 }

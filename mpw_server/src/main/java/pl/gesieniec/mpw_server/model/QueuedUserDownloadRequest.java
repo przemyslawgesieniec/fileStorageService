@@ -30,4 +30,5 @@ public class QueuedUserDownloadRequest implements QueuedUserRequest {
     public String getFileName() {
         return fileServerName;
     }
+
 }

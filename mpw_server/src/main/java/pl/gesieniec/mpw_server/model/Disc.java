@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.springframework.util.StopWatch;
@@ -33,7 +34,7 @@ public class Disc {
 
         stubProcessingTime(userRequest.getFileProcessingTime());
         saveFile(userRequest.getUserFileData());
-        System.out.println("Disc::::file of user: " + userRequest.getUser() + "saved properly");
+        System.out.println("DISC: file of user: " + userRequest.getUser() + " saved properly");
         updateCsvFile(userRequest.getUserFileData().getOriginalFileName(), userRequest.getUserFileData().getServerFileName(), userRequest.getUser());
 
     }
@@ -42,7 +43,7 @@ public class Disc {
 
         stubProcessingTime(userRequest.getFileProcessingTime());
         String fileContent = getFileContent(userRequest.getFileName());
-        System.out.println("Disc::::file of user: " + userRequest.getUser() + "downloaded properly");
+        System.out.println("DISC: file "+userRequest.getFileName() +" of user: " + userRequest.getUser() + " downloaded properly");
         return new UserFileData(userRequest.getFileProcessingTime(), fileContent, userRequest.getFileName());
     }
 
@@ -50,17 +51,17 @@ public class Disc {
 
         File directory = new File(directoryPath);
 
-        final String fileContent = Arrays.stream(directory.listFiles())
+        final String fileContent = String.join("\n", Arrays.stream(Objects.requireNonNull(directory.listFiles()))
                 .filter(file -> file.getName().equals(fileServerName))
                 .findFirst().map(file -> {
                     try {
-                        return Files.readString(Paths.get(file.toURI()));
+                        return Files.readAllLines(Paths.get(file.toURI()));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     return null;
                 })
-                .orElse("");
+                .get());
 
 
         return fileContent;
@@ -92,14 +93,14 @@ public class Disc {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        System.out.println("Disc::::saving in progress");
+        System.out.println("DISC: processing file");
         try {
             Thread.sleep(savingTime);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         stopWatch.stop();
-        System.out.println("Disc::::file saved in: " + stopWatch.getTotalTimeMillis() / 1000 + "s");
+        System.out.println("DISC: file processed in: " + stopWatch.getTotalTimeMillis() / 1000 + "s");
     }
 
     public synchronized boolean isStoringUserFile(String fileName) {

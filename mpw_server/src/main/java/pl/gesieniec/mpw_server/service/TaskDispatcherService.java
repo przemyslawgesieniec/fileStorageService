@@ -15,8 +15,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,7 @@ public class TaskDispatcherService {
 
     public TaskDispatcherService() {
         uploadPool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
+        downloadPool = Executors.newFixedThreadPool(NUMBER_OF_DISCS);
 
         userRequestsCounter = new ConcurrentHashMap<>();
 
@@ -67,24 +70,36 @@ public class TaskDispatcherService {
 
         final Long taskPriority = calculateTaskPriority(queuedUserRequest.getUser(), queuedUserRequest.getFileProcessingTime());
         System.out.println("TaskDispatcherService:DOWNLOAD:::File " + queuedUserRequest.getFileServerName() + "of user: " + queuedUserRequest.getUser() + " has priority: " + taskPriority);
-        final DownloadFileTask downloadFileTask = new DownloadFileTask(downloadService, queuedUserRequest, taskPriority);
+        final DownloadFileTask downloadFileTask = new DownloadFileTask(queuedUserRequest, taskPriority, downloadService);
         downloadQueue.add(downloadFileTask);
     }
 
-    public List<UserFileData> tryToDownload(final List<String> filesNames, String user) {
+    public List<UserFileData> tryToDownload(final List<String> filesNames) throws InterruptedException {
 
         List<UserFileData> filesContent = new ArrayList<>();
 
         final Map<String, Task> queueSnapshot = readyToDownloadQueueSnapshot();
 
-        queueSnapshot.entrySet()
+        final List<Task> matchedUserTasksFromQueue = queueSnapshot.entrySet()
                 .stream()
                 .filter(e -> filesNames.contains(e.getKey()))
                 .map(Map.Entry::getValue)
-                .forEach(task -> {
-                    filesContent.add(downloadService.readRequestedFile(task.getQueuedUserRequest()));
-                    downloadQueue.remove(task);
+                .collect(Collectors.toList());
+
+        if(!matchedUserTasksFromQueue.isEmpty()){
+                final List<Future<UserFileData>> futures = downloadPool.invokeAll(matchedUserTasksFromQueue);
+                futures.forEach(f->{
+                    try {
+                        filesContent.add(f.get());
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
                 });
+        }
+
+        System.out.println("QUEUE SIEZE BEFORE: " + downloadQueue.size() );
+        downloadQueue.removeAll(matchedUserTasksFromQueue);
+        System.out.println("QUEUE SIEZE AFTER: " + downloadQueue.size() );
 
         return filesContent;
     }

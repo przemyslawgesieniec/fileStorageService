@@ -6,17 +6,17 @@ import pl.gesieniec.mpw_server.model.UserFileData;
 import pl.gesieniec.mpw_server.service.SynchronizationService;
 import pl.gesieniec.mpw_server.service.TaskDispatcherService;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 public class FileController {
@@ -34,7 +34,7 @@ public class FileController {
         UserFileData userFileData = new UserFileData(file.getOriginalFilename(), file.getSize(), new String(file.getBytes()));
         QueuedUserUploadRequest queuedUserRequest = new QueuedUserUploadRequest(user, userFileData);
         taskDispatcherService.submitNewUploadRequest(queuedUserRequest);
-        return ResponseEntity.ok().body(userFileData);
+        return ok().body(userFileData);
     }
 
     @GetMapping("/sync")
@@ -46,35 +46,23 @@ public class FileController {
 
 
     @GetMapping("/request/download")
-    public String requestDownloadingFiles(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
+    public ResponseEntity requestDownloadingFiles(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
+
 
         filesNames.forEach(e -> {
-            QueuedUserDownloadRequest queuedUserDownloadRequest = new QueuedUserDownloadRequest(user, e);
+            final String trimmedString = e.replaceAll("\"", "");
+            QueuedUserDownloadRequest queuedUserDownloadRequest = new QueuedUserDownloadRequest(user, trimmedString);
             taskDispatcherService.submitNewDownloadRequest(queuedUserDownloadRequest);
         });
 
-        return "processing";
-
+        return ok().body("processing");
     }
 
     @GetMapping("/download")
-    public List<MultipartFile> downloadAnyOfRequested(@RequestParam("user") final String user, @RequestParam("filesNames") final List<String> filesNames) {
+    public ResponseEntity<List<UserFileData>> downloadAnyOfRequested(@RequestParam("filesNames") final List<String> filesNames) throws InterruptedException {
 
-
-        final List<UserFileData> userFileData = taskDispatcherService.tryToDownload(filesNames, user);
-        final List<MultipartFile> userRequestedFiles = new ArrayList<>();
-
-        userFileData.forEach(ufd ->
-                userRequestedFiles.add(new MockMultipartFile(ufd.getServerFileName(), ufd.getContent().getBytes())));
-
-
-        return userRequestedFiles;
-    }
-
-
-    @GetMapping("/health")
-    public String healthCheck() {
-        return "ok";
+        final List<UserFileData> userFileData = taskDispatcherService.tryToDownload(filesNames);
+        return ok(userFileData);
     }
 
 }

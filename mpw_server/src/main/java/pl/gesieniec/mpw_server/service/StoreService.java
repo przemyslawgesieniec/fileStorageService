@@ -24,7 +24,6 @@ public class StoreService {
         System.out.println("Store Service::::: available discs: " + discs.size());
         final Disc polledDisc = discs.poll();
         System.out.println("Store Service::::: polled disc:" + polledDisc.getDiscNumber());
-
         polledDisc.save(queuedUserRequest);
         discs.add(polledDisc);
     }
